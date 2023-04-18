@@ -1,0 +1,412 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: "SKILLS MANAGEMENT SMILE SWAGGER"
+  description: Skills is a simple API allowing consumers to navigate and query the skills repository as well as people skills.
+host: skills.apiblueprint.org
+basePath: /v1.0
+schemes:
+- https
+consumes:
+- application/json
+produces:
+- application/json
+paths:
+  /skills/root:
+    x-summary: Skills Root Collection
+    get:
+      summary: Get Root Skill
+      description: Get a special type of skill node which the parent of all nodes.
+      responses:
+        200:
+          description: Successful Response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Skill'
+          examples:
+            application/json:
+              - id: 1
+                name: 'root'
+                labels:
+                  - 'root'
+                relationships:
+                  - relationshipName: "child"
+                    count: 5
+  
+  /skills/{id}:
+    x-summary: Specific Skill Collection
+    get:
+      summary: Get a specific skill
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: id of the node to retrieve
+        - name: depth
+          in: query
+          type: integer
+          minimum: 0
+          maximum: 3
+          default: 0
+          description: depth of the graph. By default it is 0 to have no children at all.
+      description: >
+        skills returned can be shallow or deep. 
+        
+        
+        If they are **shallow** (no depth parameter or depth set to 0), so they don't expose the array of linked skills 
+        but only expose that the skill has relationships, of what type and how many.
+        
+        
+        if it's **deep** (specified by using the depth parameter), the related skills are 
+        listed for each type of relationship.
+      responses:
+        200:
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/Skill'
+          examples:
+            application/json:
+                id: 2
+                name: 'Java'
+                labels:
+                  - 'Hard Skill'
+                  - 'Programming Language'
+                  - 'Main Technology'
+                relationships:
+                  - relationshipName: "FAMILY_OF"
+                    count: 34
+                    relations:
+                      - id: 3
+                        name: "Spring"
+                        labels:
+                          - "Framework"
+                        relationships:
+                          - relationshipName: "VERSION"
+                            count: 10
+
+  /skills/search:
+    x-summary: Search Skill Collection
+    get:
+      summary: Search for a skill
+      parameters:
+        - name: name
+          in: query
+          type: string
+          description: name of the Skill we are searching
+        - name: labels
+          in: query
+          type: string
+          description: a '|' separated list of labels to search for. Labels in the list are ORed. The label list is ANDed with the name parameter
+      description: >
+        This query allows to search for a specific node.
+        
+        - If name only is passed as a parameter, all nodes with an exact match on the name will be returned.
+        
+        - If labels only are passed, all nodes with one or more matching labels will be return (this means the query will make a OR between labels)
+        
+        - If both labels and name are passed, only the node with the matching name AND one or more matching labels are returned. 
+      responses:
+        200:
+          description: Successful Response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Skill'
+          examples:
+            application/json:
+              - id: 2
+                name: 'Java'
+                labels:
+                  - 'Hard Skill'
+                  - 'Programming Language'
+                  - 'Main Technology'
+                relationships:
+                  - relationshipName: "child"
+                    count: 5
+
+  /skills/labels/{label}:
+    x-summary: Get all Skills with a specific label
+    get:
+      summary: Get all Skills with a specific label
+      parameters:
+        - name: label
+          in: path
+          type: string
+          required: true
+          description: the label that searched skills have (e.g. 'Main Technology')
+          
+      description: We use labels to make the distinction between various skill groups (for instance frameworks, solutions or programming languages). This request is a way to get all skills associated to a specific label.
+      responses:
+        200:
+          description: Successful Response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Skill'
+          examples:
+            application/json:
+              - id: 2
+                name: 'Java'
+                labels:
+                  - 'Hard Skill'
+                  - 'Programming Language'
+                  - 'Main Technology'
+                relationships:
+                  - relationshipName: "child"
+                    count: 5
+
+  /people/{id}/skills:
+    x-summary: List all skills held by an employee
+    get:
+      summary: List all skills held by an employee
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: id of the employee. It must match the GESCOM id.
+        - name: from
+          in: query
+          type: string
+          format: date-time
+          description: filters skills from the passed parameter value up to current date and time
+      description: each skill is associated with a level and the last update date for this level.
+      responses:
+        200:
+          description: Successful Response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/People'
+          examples:
+            application/json:
+              - id: 1001
+                skills:
+                  - skill:
+                      id: 2
+                      name: 'Java'
+                      labels:
+                        - 'Hard Skill'
+                        - 'Programming Language'
+                        - 'Main Technology'
+                      relationships:
+                        - relationshipName: "child"
+                          count: 5
+                    level: 3
+                    lastUpdate: '2017-07-21T17:32:28Z'
+                    validated: false
+                  - skill:
+                      id: 5
+                      name: 'Python'
+                      labels:
+                        - 'Hard Skill'
+                        - 'Programming Language'
+                      relationships:
+                        - relationshipName: "child"
+                          count: 5
+                    level: 3
+                    lastUpdate: '2017-07-21T17:32:28Z'
+                    validated: true
+
+  /skillsets:
+    x-summary: All skillsets
+    get:
+      description: returns the full list of all existing skillsets
+      responses:
+        200:
+          description: Successful Response
+          schema:
+            type: array
+            items: 
+              $ref: '#/definitions/Skillset'
+          examples:
+            application/json:
+              - id: 10
+                name: "Java Developer"
+                skills:
+                  - id: 2
+                    name: 'Java'
+                    labels:
+                      - 'Hard Skill'
+                      - 'Programming Language'
+                      - 'Main Technology'
+                    relationships:
+                      - relationshipName: "child"
+                        count: 5
+                  - id: 3
+                    name: "Spring"
+                    labels:
+                      - "Framework"
+                    relationships:
+                      - relationshipName: "VERSION"
+                        count: 10
+              - id: 11
+                name: "Python Developer"
+                skills:
+                  - id: 5
+                    name: 'Python'
+                    labels:
+                      - 'Hard Skill'
+                      - 'Programming Language'
+                    relationships:
+                      - relationshipName: "child"
+                        count: 5
+
+  /skillsets/{id}:
+    x-summary: Get a specific skillset
+    get:
+      summary: Get a specific skillset
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: the id of the skillset to retrieve
+      description: returns a single skillset
+      responses:
+        200:
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/Skillset'   
+          examples:
+            application/json:
+              id: 10
+              name: "Java Developer"
+              skills:
+                - id: 2
+                  name: 'Java'
+                  labels:
+                    - 'Hard Skill'
+                    - 'Programming Language'
+                    - 'Main Technology'
+                  relationships:
+                    - relationshipName: "child"
+                      count: 5
+                - id: 3
+                  name: "Spring"
+                  labels:
+                    - "Framework"
+                  relationships:
+                    - relationshipName: "VERSION"
+                      count: 10
+
+  /completness:
+    x-summary: Get completeness of a list of skill from a list of people
+    post:
+      summary: Get completeness of a list of skill from a list of people
+      parameters:
+        - name: criteria
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              people:
+                description: list of people id
+                type: array
+                items:
+                  type: integer
+              skills:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    skill:
+                      type: integer
+                      description: id of a skill
+                    minLevel:
+                      type: integer
+                      description: minimum skill level required
+                  required:
+                    - skill
+                    - minLevel
+            required:
+              - people
+              - skills
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                skill:
+                  type: integer
+                matching:
+                  type: integer
+                  description: number of people matching the level criterion
+
+definitions:
+  Skill:
+    title: Skill
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      labels:
+        type: array
+        items:
+          type: string
+      relationships:
+        type: array
+        items:
+          type: object
+          properties:
+            relationshipName: 
+              type: string
+            count:
+              type: integer
+            relations:
+              type: array
+              items:
+                $ref: '#/definitions/Skill'
+    required:
+      - id
+      - name
+      - labels
+      - relationships
+      
+  People:
+    title: people
+    type: object
+    properties:
+      id:
+        type: integer
+      skills:
+        type: array
+        items:
+          type: object
+          properties:
+            skill:
+              $ref: '#/definitions/Skill'
+            level:
+              type: integer
+              minimum: 0
+              maximum: 5
+            lastUpdate:
+              type: string
+              format: date-time
+            validated:
+              type: boolean
+    required:
+      - id
+  
+  Skillset:
+    title: skillset
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      skills:
+        type: array
+        items:
+          $ref: '#/definitions/Skill'
+    required:
+      - id
